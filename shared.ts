@@ -164,8 +164,8 @@ const baseTypesToArbitrary: BaseTypesToArbitrary = {
  */
 const complexTypesToArbitrary: ComplexTypesToArbitrary = {
   // For buffer types, the length must be doubled because they are represented
-  // in hex, as `Cl.bufferFromHex` expects. The UInt8Array will have half the length of the corresponding
-  // hex string. Stacks.js reference:
+  // in hex, as `Cl.bufferFromHex` expects. The UInt8Array will have half the
+  // length of the corresponding hex string. Stacks.js reference:
   // https://github.com/stx-labs/stacks.js/blob/fd0bf26b5f29fc3c1bf79581d0ad9b89f0d7f15a/packages/common/src/utils.ts#L522
   buffer: (length: number) =>
     hexaString({ maxLength: 2 * length }).map(Cl.bufferFromHex),
@@ -226,6 +226,9 @@ const complexTypesToArbitrary: ComplexTypesToArbitrary = {
     addresses: string[],
     projectTraitImplementations: Record<string, ImplementedTraitType[]>,
   ) =>
+    // `fc.record` draws one boolean per value to pick the object's prototype.
+    // Saved regression seeds depend on that draw, so keep the record wrapper
+    // here and do not pass `noNullPrototype: true` to the tuple record above.
     fc.oneof(
       fc
         .record({

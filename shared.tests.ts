@@ -2,7 +2,7 @@ import { rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { initSimnet } from "@stacks/clarinet-sdk";
-import { Cl, type ClarityValue } from "@stacks/transactions";
+import { Cl, cvToString, type ClarityValue } from "@stacks/transactions";
 import fc from "fast-check";
 
 import {
@@ -176,5 +176,48 @@ describe("Tuple argument generation", () => {
         Object.getPrototypeOf((generated as { value: object }).value),
       ).toBe(Object.prototype);
     });
+  });
+});
+
+describe("Argument generation with a fixed seed", () => {
+  it("generates the same values for the same seed", () => {
+    const fn = {
+      name: "f",
+      access: "public",
+      outputs: {},
+      args: [
+        {
+          name: "x",
+          type: {
+            tuple: [
+              { name: "a", type: "int128" },
+              { name: "b", type: { buffer: { length: 4 } } },
+            ],
+          },
+        },
+        {
+          name: "y",
+          type: {
+            response: {
+              ok: "uint128",
+              error: { "string-ascii": { length: 5 } },
+            },
+          },
+        },
+        { name: "z", type: "uint128" },
+      ],
+    } as unknown as EnrichedContractInterfaceFunction;
+    const arbitraries = functionToArbitrary(fn, [], {});
+
+    const actual = fc
+      .sample(fc.tuple(...arbitraries), { seed: 42, numRuns: 4 })
+      .map((args) => args.map((arg) => cvToString(arg)));
+
+    expect(actual).toEqual([
+      ["(tuple (a 9) (b 0x))", '(err "JD")', "u30"],
+      ["(tuple (a -994490854) (b 0x0c))", "(ok u1605711835)", "u19"],
+      ["(tuple (a -1536816376) (b 0x05))", '(err "")', "u27"],
+      ["(tuple (a -25) (b 0x09eb8c))", '(err "mRm~")', "u692493152"],
+    ]);
   });
 });
