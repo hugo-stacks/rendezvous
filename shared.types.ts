@@ -3,26 +3,10 @@ import type {
   ContractInterfaceFunctionArg,
   ContractInterfaceFunctionOutput,
 } from "@stacks/clarinet-sdk-wasm";
-import type {
-  boolCV,
-  bufferCV,
-  ClarityValue,
-  intCV,
-  listCV,
-  optionalCVOf,
-  principalCV,
-  responseErrorCV,
-  responseOkCV,
-  stringAsciiCV,
-  stringUtf8CV,
-  tupleCV,
-  uintCV,
-} from "@stacks/transactions";
+import type { ClarityValue } from "@stacks/transactions";
 import type fc from "fast-check";
 
 import type { ImplementedTraitType, ImportedTraitType } from "./traits.types";
-
-// Types used for Clarity Value conversion.
 
 interface ImportedTraitReferenceFunctionArg {
   type: {
@@ -40,34 +24,6 @@ export interface EnrichedContractInterfaceFunction {
   name: string;
   access: ContractInterfaceFunctionAccess;
   outputs: ContractInterfaceFunctionOutput;
-}
-
-export type ResponseStatus = "ok" | "error";
-
-export type TupleData<T extends ClarityValue = ClarityValue> = Record<
-  string,
-  T
->;
-
-export interface BaseTypesToCV {
-  int128: (arg: number) => ReturnType<typeof intCV>;
-  uint128: (arg: number) => ReturnType<typeof uintCV>;
-  bool: (arg: boolean) => ReturnType<typeof boolCV>;
-  principal: (arg: string) => ReturnType<typeof principalCV>;
-}
-
-export interface ComplexTypesToCV {
-  buffer: (arg: string) => ReturnType<typeof bufferCV>;
-  "string-ascii": (arg: string) => ReturnType<typeof stringAsciiCV>;
-  "string-utf8": (arg: string) => ReturnType<typeof stringUtf8CV>;
-  list: (type: ClarityValue[]) => ReturnType<typeof listCV>;
-  tuple: (tupleData: TupleData) => ReturnType<typeof tupleCV>;
-  optional: (arg: ClarityValue | null) => ReturnType<typeof optionalCVOf>;
-  response: (
-    status: ResponseStatus,
-    value: ClarityValue,
-  ) => ReturnType<typeof responseOkCV | typeof responseErrorCV>;
-  trait_reference: (trait: string) => ReturnType<typeof principalCV>;
 }
 
 // Types used for argument generation.
@@ -115,40 +71,40 @@ export type ParameterType = BaseType | ComplexType;
 export type EnrichedParameterType = EnrichedBaseType | EnrichedComplexType;
 
 export interface BaseTypesToArbitrary {
-  int128: ReturnType<typeof fc.integer>;
-  uint128: ReturnType<typeof fc.nat>;
-  bool: ReturnType<typeof fc.boolean>;
-  principal: (addresses: string[]) => ReturnType<typeof fc.constantFrom>;
+  int128: fc.Arbitrary<ClarityValue>;
+  uint128: fc.Arbitrary<ClarityValue>;
+  bool: fc.Arbitrary<ClarityValue>;
+  principal: (addresses: string[]) => fc.Arbitrary<ClarityValue>;
 }
 
 export interface ComplexTypesToArbitrary {
-  buffer: (length: number) => fc.Arbitrary<string>;
-  "string-ascii": (length: number) => fc.Arbitrary<string>;
-  "string-utf8": (length: number) => fc.Arbitrary<string>;
+  buffer: (length: number) => fc.Arbitrary<ClarityValue>;
+  "string-ascii": (length: number) => fc.Arbitrary<ClarityValue>;
+  "string-utf8": (length: number) => fc.Arbitrary<ClarityValue>;
   list: (
     type: EnrichedParameterType,
     length: number,
     addresses: string[],
     projectTraitImplementations: Record<string, ImplementedTraitType[]>,
-  ) => fc.Arbitrary<any[]>;
+  ) => fc.Arbitrary<ClarityValue>;
   tuple: (
     items: { name: string; type: EnrichedParameterType }[],
     addresses: string[],
     projectTraitImplementations: Record<string, ImplementedTraitType[]>,
-  ) => fc.Arbitrary<object>;
+  ) => fc.Arbitrary<ClarityValue>;
   optional: (
     type: EnrichedParameterType,
     addresses: string[],
     projectTraitImplementations: Record<string, ImplementedTraitType[]>,
-  ) => fc.Arbitrary<any>;
+  ) => fc.Arbitrary<ClarityValue>;
   response: (
     okType: EnrichedParameterType,
     errType: EnrichedParameterType,
     addresses: string[],
     projectTraitImplementations: Record<string, ImplementedTraitType[]>,
-  ) => fc.Arbitrary<any>;
+  ) => fc.Arbitrary<ClarityValue>;
   trait_reference: (
     traitData: ImportedTraitType,
     projectTraitImplementations: Record<string, ImplementedTraitType[]>,
-  ) => fc.Arbitrary<any>;
+  ) => fc.Arbitrary<ClarityValue>;
 }

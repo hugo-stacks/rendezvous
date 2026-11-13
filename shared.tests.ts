@@ -2,14 +2,17 @@ import { rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { initSimnet } from "@stacks/clarinet-sdk";
+import { Cl, type ClarityValue } from "@stacks/transactions";
 import fc from "fast-check";
 
 import {
+  functionToArbitrary,
   getContractNameFromContractId,
   getFunctionsFromContractInterfaces,
   getFunctionsListForContract,
   getSimnetDeployerContractsInterfaces,
 } from "./shared";
+import type { EnrichedContractInterfaceFunction } from "./shared.types";
 import { createIsolatedTestEnvironment } from "./test.utils";
 
 const isolatedTestEnvPrefix = "rendezvous-test-shared-";
@@ -122,5 +125,33 @@ describe("Contract identifier parsing", () => {
         },
       ),
     );
+  });
+});
+
+describe("Optional argument generation", () => {
+  const generate = (type: unknown): ClarityValue[] => {
+    const fn = {
+      name: "f",
+      access: "public",
+      outputs: {},
+      args: [{ name: "x", type }],
+    } as unknown as EnrichedContractInterfaceFunction;
+    const [arbitrary] = functionToArbitrary(fn, [], {});
+    return fc.sample(arbitrary, { seed: 42, numRuns: 500 });
+  };
+
+  it.each([
+    ["bool", Cl.bool(false)],
+    ["int128", Cl.int(0)],
+    ["uint128", Cl.uint(0)],
+    [{ "string-ascii": { length: 1 } }, Cl.stringAscii("")],
+    [{ "string-utf8": { length: 1 } }, Cl.stringUtf8("")],
+    [{ buffer: { length: 1 } }, Cl.bufferFromHex("")],
+    [{ optional: "bool" }, Cl.none()],
+  ])("generates (some %j) for falsy inner value", (inner, expected) => {
+    const generated = generate({ optional: inner });
+
+    expect(generated).toContainEqual(Cl.some(expected));
+    expect(generated).toContainEqual(Cl.none());
   });
 });
