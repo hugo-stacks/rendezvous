@@ -155,3 +155,26 @@ describe("Optional argument generation", () => {
     expect(generated).toContainEqual(Cl.none());
   });
 });
+
+describe("Tuple argument generation", () => {
+  it("generates tuple values with a regular prototype", () => {
+    const fn = {
+      name: "f",
+      access: "public",
+      outputs: {},
+      args: [
+        {
+          name: "x",
+          type: { tuple: [{ name: "a", type: "bool" }] },
+        },
+      ],
+    } as unknown as EnrichedContractInterfaceFunction;
+    const [arbitrary] = functionToArbitrary(fn, [], {});
+
+    fc.sample(arbitrary, { seed: 42, numRuns: 200 }).forEach((generated) => {
+      expect(
+        Object.getPrototypeOf((generated as { value: object }).value),
+      ).toBe(Object.prototype);
+    });
+  });
+});

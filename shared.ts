@@ -205,7 +205,7 @@ const complexTypesToArbitrary: ComplexTypesToArbitrary = {
         projectTraitImplementations,
       );
     });
-    return fc.record(tupleArbitraries).map(Cl.tuple);
+    return fc.record(tupleArbitraries).map((data) => Cl.tuple({ ...data }));
   },
   optional: (
     type: EnrichedParameterType,
